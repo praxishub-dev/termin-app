@@ -1,4 +1,5 @@
-const CACHE = 'therapie-v2';
+// Network-first: immer aktuelle Version laden, Cache nur als Offline-Fallback
+const CACHE = 'therapie-v3';
 const BASE = '/termin-app';
 const ASSETS = [BASE + '/', BASE + '/index.html'];
 
@@ -15,7 +16,14 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request, { cache: 'no-store' })
+      .then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
